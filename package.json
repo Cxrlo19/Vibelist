@@ -1,0 +1,13 @@
+{
+  "name": "vibelist",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:mobile": "npm run start --workspace=apps/mobile",
+    "build:backend": "npm run build --workspace=apps/backend"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "vibelist",
+    "slug": "vibelist",
+    "version": "1.0.0",
+    "scheme": "vibelist",
+    "orientation": "portrait",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
