@@ -64,3 +64,43 @@ export async function enrichSongsWithSpotify(
         })
     );
 }
+
+export async function getSpotifyRecommendations(
+    artists: string[],
+    audioFeatures: { energy: number; valence: number; tempo: number }
+): Promise<Song[]> {
+    const token = await getSpotifyToken();
+
+    // Step 1: Get artist IDs
+    const artistIds = await Promise.all(
+        artists.slice(0, 3).map(async (artist) => {
+            const res = await axios.get('https://api.spotify.com/v1/search', {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { q: artist, type: 'artist', limit: 1 }
+            });
+            return res.data.artists.items[0]?.id ?? null;
+        })
+    );
+
+    const seedArtists = artistIds.filter(Boolean).join(',');
+
+    // Step 2: Get recommendations
+    const res = await axios.get('https://api.spotify.com/v1/recommendations', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+            seed_artists: seedArtists,
+            target_energy: audioFeatures.energy,
+            target_valence: audioFeatures.valence,
+            target_tempo: audioFeatures.tempo,
+            limit: 10
+        }
+    });
+
+    return res.data.tracks.map((track: any) => ({
+        title: track.name,
+        artist: track.artists[0].name,
+        spotifyUrl: track.external_urls.spotify,
+        albumArt: track.album.images[1]?.url ?? null,
+        previewUrl: track.preview_url ?? null,
+    }));
+}

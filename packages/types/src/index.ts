@@ -6,11 +6,19 @@ export interface Song {
     previewUrl: string | null;
 }
 
+export interface AudioFeatures {
+    energy: number;
+    valence: number;
+    tempo: number;
+}
+
 export interface Playlist {
     playlistName: string;
     moodDescription: string;
     vibeTags: string[];
     songs: Song[];
+    extractedArtists?: string[];
+    audioFeatures?: AudioFeatures;
 }
 
 export interface GenerateRequest {
