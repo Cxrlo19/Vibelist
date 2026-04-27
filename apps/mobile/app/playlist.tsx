@@ -3,6 +3,7 @@ import {
     View, Text, ScrollView, TouchableOpacity,
     StyleSheet, Linking, Image
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, fonts, spacing, radius } from '../constants/theme';
 import { Playlist, Song } from '@vibelist/types';
 
@@ -51,6 +52,33 @@ export default function PlaylistScreen() {
     );
 }
 
+const GRADIENTS: [string, string][] = [
+    ['#C8F060', '#4A7C00'],
+    ['#FF6B6B', '#8B0000'],
+    ['#6B9FFF', '#00008B'],
+    ['#FFB86B', '#8B4500'],
+    ['#D06BFF', '#4B0082'],
+    ['#6BFFE0', '#006B5A'],
+    ['#FF6BC8', '#8B0057'],
+    ['#FFF06B', '#8B7800'],
+];
+
+function AlbumPlaceholder({ index }: { index: number }) {
+    const [start, end] = GRADIENTS[index % GRADIENTS.length];
+    return (
+        <LinearGradient
+            colors={[start, end]}
+            style={styles.albumArt}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+        >
+            <Text style={styles.albumPlaceholder}>
+                {String(index + 1).padStart(2, '0')}
+            </Text>
+        </LinearGradient>
+    );
+}
+
 function SongCard({ song, index }: { song: Song; index: number }) {
     const handlePress = () => {
         if (song.spotifyUrl) {
@@ -63,13 +91,11 @@ function SongCard({ song, index }: { song: Song; index: number }) {
 
     return (
         <TouchableOpacity style={styles.songCard} onPress={handlePress} activeOpacity={0.7}>
-            {/* Album art or placeholder */}
-            <View style={styles.albumArt}>
-                {song.albumArt
-                    ? <Image source={{ uri: song.albumArt }} style={styles.albumImage} />
-                    : <Text style={styles.albumPlaceholder}>{String(index + 1).padStart(2, '0')}</Text>
-                }
-            </View>
+            {/* Album art or gradient placeholder */}
+            {song.albumArt
+                ? <Image source={{ uri: song.albumArt }} style={[styles.albumArt, styles.albumImage]} />
+                : <AlbumPlaceholder index={index} />
+            }
 
             {/* Song info */}
             <View style={styles.songInfo}>
@@ -157,7 +183,6 @@ const styles = StyleSheet.create({
         width: 52,
         height: 52,
         borderRadius: radius.sm,
-        backgroundColor: colors.surfaceElevated,
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
@@ -169,7 +194,7 @@ const styles = StyleSheet.create({
     albumPlaceholder: {
         fontFamily: fonts.display,
         fontSize: 16,
-        color: colors.accent,
+        color: '#0A0A0F',
     },
     songInfo: {
         flex: 1,
