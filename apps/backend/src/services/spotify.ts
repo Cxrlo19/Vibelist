@@ -28,6 +28,71 @@ export async function getSpotifyToken(): Promise<string> {
     return cachedToken!;
 }
 
+export async function getArtistIds(artists: string[]): Promise<string[]> {
+    const token = await getSpotifyToken();
+
+    const ids = await Promise.all(
+        artists.slice(0, 3).map(async (artist) => {
+            try {
+                const res = await axios.get('https://api.spotify.com/v1/search', {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: { q: artist, type: 'artist', limit: 1 }
+                });
+                const found = res.data.artists.items[0];
+                console.log(`Found artist: ${found?.name} (${found?.id})`);
+                return found?.id ?? null;
+            } catch (err: any) {
+                console.error(`Error finding artist ${artist}:`, err?.response?.data || err.message);
+                return null;
+            }
+        })
+    );
+
+    return ids.filter(Boolean) as string[];
+}
+
+export async function getSpotifyRecommendations(
+    artistIds: string[],
+    audioFeatures: { energy: number; valence: number; tempo: number },
+    seedGenres: string[] = []
+): Promise<Song[]> {
+    const token = await getSpotifyToken();
+
+    // Build seed params — Spotify allows max 5 seeds total
+    const params: any = {
+        limit: 10,
+        target_energy: audioFeatures.energy,
+        target_valence: audioFeatures.valence,
+        target_tempo: audioFeatures.tempo,
+    };
+
+    if (artistIds.length > 0) {
+        params.seed_artists = artistIds.slice(0, 3).join(',');
+    }
+
+    if (seedGenres.length > 0 && artistIds.length < 3) {
+        params.seed_genres = seedGenres.slice(0, 2).join(',');
+    }
+
+    try {
+        const res = await axios.get('https://api.spotify.com/v1/recommendations', {
+            headers: { Authorization: `Bearer ${token}` },
+            params,
+        });
+
+        return res.data.tracks.map((track: any) => ({
+            title: track.name,
+            artist: track.artists[0].name,
+            spotifyUrl: track.external_urls.spotify ?? null,
+            albumArt: track.album.images[1]?.url ?? null,
+            previewUrl: track.preview_url ?? null,
+        }));
+    } catch (err: any) {
+        console.error('Spotify recommendations error:', err?.response?.data || err.message);
+        return [];
+    }
+}
+
 export async function enrichSongsWithSpotify(
     songs: { title: string; artist: string }[]
 ): Promise<Song[]> {
@@ -53,54 +118,9 @@ export async function enrichSongsWithSpotify(
                     previewUrl: track?.preview_url ?? null,
                 };
             } catch (err: any) {
-                console.error('Spotify error for', song.title, ':', err?.response?.data || err.message);
-                return {
-                    ...song,
-                    spotifyUrl: null,
-                    albumArt: null,
-                    previewUrl: null
-                };
+                console.error(`Spotify error for ${song.title} :`, err?.response?.data || err.message);
+                return { ...song, spotifyUrl: null, albumArt: null, previewUrl: null };
             }
         })
     );
-}
-
-export async function getSpotifyRecommendations(
-    artists: string[],
-    audioFeatures: { energy: number; valence: number; tempo: number }
-): Promise<Song[]> {
-    const token = await getSpotifyToken();
-
-    // Step 1: Get artist IDs
-    const artistIds = await Promise.all(
-        artists.slice(0, 3).map(async (artist) => {
-            const res = await axios.get('https://api.spotify.com/v1/search', {
-                headers: { Authorization: `Bearer ${token}` },
-                params: { q: artist, type: 'artist', limit: 1 }
-            });
-            return res.data.artists.items[0]?.id ?? null;
-        })
-    );
-
-    const seedArtists = artistIds.filter(Boolean).join(',');
-
-    // Step 2: Get recommendations
-    const res = await axios.get('https://api.spotify.com/v1/recommendations', {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-            seed_artists: seedArtists,
-            target_energy: audioFeatures.energy,
-            target_valence: audioFeatures.valence,
-            target_tempo: audioFeatures.tempo,
-            limit: 10
-        }
-    });
-
-    return res.data.tracks.map((track: any) => ({
-        title: track.name,
-        artist: track.artists[0].name,
-        spotifyUrl: track.external_urls.spotify,
-        albumArt: track.album.images[1]?.url ?? null,
-        previewUrl: track.preview_url ?? null,
-    }));
 }
