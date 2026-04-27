@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { generatePlaylist } from '../services/groq';
-import { enrichSongsWithSpotify, getArtistIds, getSpotifyRecommendations } from '../services/spotify';
+import { enrichSongsWithSpotify } from '../services/spotify';
+import { expandArtists } from '../services/lastfm';
 
 const router = Router();
 
@@ -12,33 +13,25 @@ router.post('/generate', async (req: Request, res: Response) => {
     }
 
     try {
-        // Step 1: Generate playlist metadata + extract artists/audio features
-        const playlist = await generatePlaylist(vibe);
+        // Step 1: Quick first pass to extract artists
+        const initial = await generatePlaylist(vibe);
 
-        let songs;
+        let expandedArtists: string[] = [];
 
-        // Step 2: If artists were extracted, use Spotify recommendations
-        if (playlist.extractedArtists && playlist.extractedArtists.length > 0) {
-            console.log('Using Spotify recommendations for artists:', playlist.extractedArtists);
-
-            const artistIds = await getArtistIds(playlist.extractedArtists);
-
-            if (artistIds.length > 0 && playlist.audioFeatures) {
-                songs = await getSpotifyRecommendations(
-                    artistIds,
-                    playlist.audioFeatures,
-                );
-            } else {
-                // Fallback to enriching Groq songs if artist IDs not found
-                songs = await enrichSongsWithSpotify(playlist.songs);
-            }
-        } else {
-            // Step 3: No artists mentioned — enrich Groq songs with Spotify metadata
-            console.log('No artists extracted, enriching Groq songs with Spotify');
-            songs = await enrichSongsWithSpotify(playlist.songs);
+        // Step 2: If artists were mentioned, expand with Last.fm similar artists
+        if (initial.extractedArtists && initial.extractedArtists.length > 0) {
+            expandedArtists = await expandArtists(initial.extractedArtists);
         }
 
-        return res.json({ ...playlist, songs });
+        // Step 3: Generate full playlist with expanded artist context
+        const playlist = expandedArtists.length > 0
+            ? await generatePlaylist(vibe, expandedArtists)
+            : initial;
+
+        // Step 4: Enrich songs with Spotify metadata
+        const enrichedSongs = await enrichSongsWithSpotify(playlist.songs);
+
+        return res.json({ ...playlist, songs: enrichedSongs });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Failed to generate playlist' });
