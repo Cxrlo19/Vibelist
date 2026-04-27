@@ -1,22 +1,21 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import playlistRoutes from './routes/playlist'
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import playlistRoutes from './routes/playlist';
+import authRoutes from './routes/auth';
+import playlistsRoutes from './routes/playlists';
 
 dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
 app.use('/api/playlist', playlistRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/playlists', playlistsRoutes);
 
-app.get('/health', (_, res) => res.json({ status: 'ok' }))
+app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`VibeList Backend running on port ${PORT}`);
-});
-
+app.listen(PORT, () => console.log(`VibeList Backend running on port ${PORT}`));

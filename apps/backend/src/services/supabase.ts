@@ -1,0 +1,20 @@
+import { createSupabaseClient } from '@vibelist/database';
+import type { SupabaseClient } from '@vibelist/database';
+
+let client: SupabaseClient | null = null;
+
+export function getSupabase(): SupabaseClient {
+    if (!client) {
+        const url = process.env.SUPABASE_URL;
+        const key = process.env.SUPABASE_SERVICE_KEY;
+
+        if (!url || !key) {
+            throw new Error('SUPABASE_URL and SUPABASE_SERVICE_KEY must be set');
+        }
+
+        client = createSupabaseClient(url, key);
+    }
+    return client;
+}
+
+export default getSupabase;
