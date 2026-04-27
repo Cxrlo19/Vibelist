@@ -54,30 +54,19 @@ export async function getArtistIds(artists: string[]): Promise<string[]> {
 export async function getSpotifyRecommendations(
     artistIds: string[],
     audioFeatures: { energy: number; valence: number; tempo: number },
-    seedGenres: string[] = []
 ): Promise<Song[]> {
     const token = await getSpotifyToken();
-
-    // Build seed params — Spotify allows max 5 seeds total
-    const params: any = {
-        limit: 10,
-        target_energy: audioFeatures.energy,
-        target_valence: audioFeatures.valence,
-        target_tempo: audioFeatures.tempo,
-    };
-
-    if (artistIds.length > 0) {
-        params.seed_artists = artistIds.slice(0, 3).join(',');
-    }
-
-    if (seedGenres.length > 0 && artistIds.length < 3) {
-        params.seed_genres = seedGenres.slice(0, 2).join(',');
-    }
 
     try {
         const res = await axios.get('https://api.spotify.com/v1/recommendations', {
             headers: { Authorization: `Bearer ${token}` },
-            params,
+            params: {
+                seed_artists: artistIds.slice(0, 3).join(','),
+                target_energy: audioFeatures.energy,
+                target_valence: audioFeatures.valence,
+                target_tempo: audioFeatures.tempo,
+                limit: 10,
+            },
         });
 
         return res.data.tracks.map((track: any) => ({
@@ -88,7 +77,17 @@ export async function getSpotifyRecommendations(
             previewUrl: track.preview_url ?? null,
         }));
     } catch (err: any) {
-        console.error('Spotify recommendations error:', err?.response?.data || err.message);
+        console.error('Spotify recommendations error:',
+            JSON.stringify(err?.response?.data, null, 2) || err.message
+        );
+        console.error('Status:', err?.response?.status);
+        console.error('Params sent:', {
+            seed_artists: artistIds.slice(0, 3).join(','),
+            target_energy: audioFeatures.energy,
+            target_valence: audioFeatures.valence,
+            target_tempo: audioFeatures.tempo,
+            limit: 10,
+        });
         return [];
     }
 }
