@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity,
     StyleSheet, KeyboardAvoidingView, Platform,
-    ActivityIndicator, Alert
+    ActivityIndicator, Alert, Animated
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -20,6 +20,32 @@ export default function HomeScreen() {
     const [vibe, setVibe] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const pulse = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        if (loading) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulse, {
+                        toValue: 0.85,
+                        duration: 600,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulse, {
+                        toValue: 1,
+                        duration: 600,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        } else {
+            Animated.timing(pulse, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [loading]);
 
     const handleGenerate = async () => {
         if (!vibe.trim()) return;
@@ -35,70 +61,73 @@ export default function HomeScreen() {
     };
 
     return (
-        <View style= { styles.container } >
-        {/* Background orb */ }
-        < LinearGradient
-    colors = { ['#C8F06022', '#0A0A0F00']}
-    style = { styles.orb }
-    start = {{ x: 0.5, y: 0 }
-}
-end = {{ x: 0.5, y: 1 }}
-      />
+        <View style={styles.container}>
+            {/* Background orb */}
+            <LinearGradient
+                colors={['#C8F06022', '#0A0A0F00']}
+                style={styles.orb}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+            />
 
-    < KeyboardAvoidingView
-behavior = { Platform.OS === 'ios' ? 'padding' : 'height' }
-style = { styles.inner }
-    >
-    {/* Header */ }
-    < View style = { styles.header } >
-        <Text style={ styles.logo }> vibelist </Text>
-            < Text style = { styles.tagline } > describe a feeling.{ '\n' }get a soundtrack.</Text>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.inner}
+            >
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.logo}>vibelist</Text>
+                    <Text style={styles.tagline}>describe a feeling.{'\n'}get a soundtrack.</Text>
+
+                    <TouchableOpacity onPress={() => router.push('/saved')} style={styles.savedLink}>
+                        <Text style={styles.savedLinkText}>saved vibes →</Text>
+                    </TouchableOpacity>
                 </View>
 
-{/* Input */ }
-<View style={ styles.inputContainer }>
-    <TextInput
-            style={ styles.input }
-placeholder = "what's the vibe..."
-placeholderTextColor = { colors.textSecondary }
-value = { vibe }
-onChangeText = { setVibe }
-multiline
-maxLength = { 150}
-returnKeyType = "done"
-    />
-    <TouchableOpacity
-            style={ [styles.button, !vibe.trim() && styles.buttonDisabled] }
-onPress = { handleGenerate }
-disabled = { loading || !vibe.trim()}
-activeOpacity = { 0.8}
-    >
-    {
-        loading
-            ?<ActivityIndicator color = {colors.background
-    } />
-              : <Text style={ styles.buttonText }> generate </Text>
-            }
-</TouchableOpacity>
-    </View>
+                {/* Input */}
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="what's the vibe..."
+                        placeholderTextColor={colors.textSecondary}
+                        value={vibe}
+                        onChangeText={setVibe}
+                        multiline
+                        maxLength={150}
+                        returnKeyType="done"
+                    />
+                    {/* Pulsing animated button */}
+                    <Animated.View style={{ transform: [{ scale: pulse }] }}>
+                        <TouchableOpacity
+                            style={[styles.button, !vibe.trim() && styles.buttonDisabled]}
+                            onPress={handleGenerate}
+                            disabled={loading || !vibe.trim()}
+                            activeOpacity={0.8}
+                        >
+                            {loading
+                                ? <ActivityIndicator color={colors.background} />
+                                : <Text style={styles.buttonText}>generate</Text>
+                            }
+                        </TouchableOpacity>
+                    </Animated.View>
+                </View>
 
-{/* Example vibes */ }
-<View style={ styles.examples }>
-    <Text style={ styles.examplesLabel }>try something like </Text>
-{
-    EXAMPLE_VIBES.map((example) => (
-        <TouchableOpacity
-              key= { example }
-              onPress = {() => setVibe(example)}
-activeOpacity = { 0.7}
-    >
-    <Text style={ styles.exampleItem }> "{example}" </Text>
-        </TouchableOpacity>
-          ))}
-</View>
-    </KeyboardAvoidingView>
-    </View>
-  );
+                {/* Example vibes */}
+                <View style={styles.examples}>
+                    <Text style={styles.examplesLabel}>try something like</Text>
+                    {EXAMPLE_VIBES.map((example) => (
+                        <TouchableOpacity
+                            key={example}
+                            onPress={() => setVibe(example)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.exampleItem}>"{example}"</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </KeyboardAvoidingView>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -135,6 +164,14 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: colors.textSecondary,
         lineHeight: 26,
+    },
+    savedLink: {
+        alignSelf: 'flex-start',
+    },
+    savedLinkText: {
+        fontFamily: fonts.body,
+        fontSize: 13,
+        color: colors.textSecondary,
     },
     inputContainer: {
         gap: spacing.md,

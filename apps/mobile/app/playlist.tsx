@@ -1,16 +1,27 @@
+import { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
     View, Text, ScrollView, TouchableOpacity,
-    StyleSheet, Linking, Image
+    StyleSheet,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors, fonts, spacing, radius } from '../constants/theme';
-import { Playlist, Song } from '@vibelist/types';
+import { Playlist } from '@vibelist/types';
+import { useSavedPlaylists } from '../hooks/useSavedPlaylists';
+import AnimatedSongCard from '../components/AnimatedSongCard';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function PlaylistScreen() {
     const { data } = useLocalSearchParams<{ data: string }>();
     const router = useRouter();
     const playlist: Playlist = JSON.parse(data);
+    const { save, saved } = useSavedPlaylists();
+    const isSaved = saved.some(p => p.playlistName === playlist.playlistName);
+    const [ready, setReady] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setReady(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     return (
         <View style={styles.container}>
@@ -36,6 +47,18 @@ export default function PlaylistScreen() {
                             </View>
                         ))}
                     </View>
+
+                    {/* Save button */}
+                    <TouchableOpacity
+                        style={[styles.saveButton, isSaved && styles.saveButtonSaved]}
+                        onPress={() => save(playlist)}
+                        disabled={isSaved}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextSaved]}>
+                            {isSaved ? '✓ saved' : '+ save playlist'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Divider */}
@@ -43,69 +66,15 @@ export default function PlaylistScreen() {
 
                 {/* Songs */}
                 <View style={styles.songs}>
-                    {playlist.songs.map((song, index) => (
-                        <SongCard key={index} song={song} index={index} />
-                    ))}
+                    {ready
+                        ? playlist.songs.map((song, index) => (
+                            <AnimatedSongCard key={index} song={song} index={index} />
+                        ))
+                        : <SkeletonLoader />
+                    }
                 </View>
             </ScrollView>
         </View>
-    );
-}
-
-const GRADIENTS: [string, string][] = [
-    ['#C8F060', '#4A7C00'],
-    ['#FF6B6B', '#8B0000'],
-    ['#6B9FFF', '#00008B'],
-    ['#FFB86B', '#8B4500'],
-    ['#D06BFF', '#4B0082'],
-    ['#6BFFE0', '#006B5A'],
-    ['#FF6BC8', '#8B0057'],
-    ['#FFF06B', '#8B7800'],
-];
-
-function AlbumPlaceholder({ index }: { index: number }) {
-    const [start, end] = GRADIENTS[index % GRADIENTS.length];
-    return (
-        <LinearGradient
-            colors={[start, end]}
-            style={styles.albumArt}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-        >
-            <Text style={styles.albumPlaceholder}>
-                {String(index + 1).padStart(2, '0')}
-            </Text>
-        </LinearGradient>
-    );
-}
-
-function SongCard({ song, index }: { song: Song; index: number }) {
-    const handlePress = () => {
-        if (song.spotifyUrl) {
-            Linking.openURL(song.spotifyUrl);
-        } else {
-            const query = encodeURIComponent(`${song.title} ${song.artist}`);
-            Linking.openURL(`https://open.spotify.com/search/${query}`);
-        }
-    };
-
-    return (
-        <TouchableOpacity style={styles.songCard} onPress={handlePress} activeOpacity={0.7}>
-            {/* Album art or gradient placeholder */}
-            {song.albumArt
-                ? <Image source={{ uri: song.albumArt }} style={[styles.albumArt, styles.albumImage]} />
-                : <AlbumPlaceholder index={index} />
-            }
-
-            {/* Song info */}
-            <View style={styles.songInfo}>
-                <Text style={styles.songTitle} numberOfLines={1}>{song.title}</Text>
-                <Text style={styles.songArtist} numberOfLines={1}>{song.artist}</Text>
-            </View>
-
-            {/* Spotify arrow */}
-            <Text style={styles.arrow}>↗</Text>
-        </TouchableOpacity>
     );
 }
 
@@ -163,6 +132,26 @@ const styles = StyleSheet.create({
         color: colors.accent,
         letterSpacing: 0.5,
     },
+    saveButton: {
+        borderWidth: 1,
+        borderColor: colors.accent,
+        borderRadius: radius.full,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        alignSelf: 'flex-start',
+        marginTop: spacing.xs,
+    },
+    saveButtonSaved: {
+        backgroundColor: colors.accent,
+    },
+    saveButtonText: {
+        fontFamily: fonts.bodyMedium,
+        fontSize: 13,
+        color: colors.accent,
+    },
+    saveButtonTextSaved: {
+        color: colors.background,
+    },
     divider: {
         height: 1,
         backgroundColor: colors.border,
@@ -170,49 +159,5 @@ const styles = StyleSheet.create({
     },
     songs: {
         gap: spacing.sm,
-    },
-    songCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: radius.md,
-        padding: spacing.md,
-        gap: spacing.md,
-    },
-    albumArt: {
-        width: 52,
-        height: 52,
-        borderRadius: radius.sm,
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-    },
-    albumImage: {
-        width: 52,
-        height: 52,
-    },
-    albumPlaceholder: {
-        fontFamily: fonts.display,
-        fontSize: 16,
-        color: '#0A0A0F',
-    },
-    songInfo: {
-        flex: 1,
-        gap: 3,
-    },
-    songTitle: {
-        fontFamily: fonts.bodyMedium,
-        fontSize: 15,
-        color: colors.textPrimary,
-    },
-    songArtist: {
-        fontFamily: fonts.body,
-        fontSize: 13,
-        color: colors.textSecondary,
-    },
-    arrow: {
-        fontFamily: fonts.body,
-        fontSize: 18,
-        color: colors.textSecondary,
     },
 });

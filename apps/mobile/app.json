@@ -14,6 +14,18 @@
     ],
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "07ff55a4-66ae-41dd-a5ae-e120725d44aa"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.cxrlo21.vibelist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
   }
 }
