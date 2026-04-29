@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { generatePlaylist } from '../services/api';
 import { colors, fonts, spacing, radius } from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
 
 const EXAMPLE_VIBES = [
     'driving at 3am in the rain',
@@ -21,6 +22,7 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const pulse = useRef(new Animated.Value(1)).current;
+    const { signOut } = useAuth();
 
     useEffect(() => {
         if (loading) {
@@ -52,7 +54,13 @@ export default function HomeScreen() {
         setLoading(true);
         try {
             const playlist = await generatePlaylist(vibe.trim());
-            router.push({ pathname: '/playlist', params: { data: JSON.stringify(playlist) } });
+            router.push({
+                pathname: '/playlist',
+                params: {
+                    data: JSON.stringify(playlist),
+                    vibeText: vibe.trim()
+                }
+            });
         } catch {
             Alert.alert('Error', 'Could not generate playlist. Is your backend running?');
         } finally {
@@ -82,6 +90,11 @@ export default function HomeScreen() {
                     <TouchableOpacity onPress={() => router.push('/saved')} style={styles.savedLink}>
                         <Text style={styles.savedLinkText}>saved vibes →</Text>
                     </TouchableOpacity>
+
+                    <TouchableOpacity onPress={signOut} style={styles.signOutLink}>
+                        <Text style={styles.signOutText}>sign out</Text>
+                    </TouchableOpacity>
+
                 </View>
 
                 {/* Input */}
@@ -219,5 +232,13 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.textSecondary,
         paddingVertical: spacing.xs,
+    },
+    signOutLink: {
+        alignSelf: 'flex-end',
+    },
+    signOutText: {
+        fontFamily: fonts.body,
+        fontSize: 13,
+        color: colors.textSecondary,
     },
 });

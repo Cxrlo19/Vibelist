@@ -9,30 +9,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { colors, fonts, spacing, radius } from '../../constants/theme';
 
-export default function SignUpScreen() {
+export default function SignInScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signUp } = useAuth();
+    const { signIn } = useAuth();
     const router = useRouter();
 
-    const handleSignUp = async () => {
+    const handleSignIn = async () => {
         if (!email.trim() || !password.trim()) return;
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
-            return;
-        }
-        if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters');
-            return;
-        }
         setLoading(true);
         try {
-            await signUp(email.trim(), password);
-            Alert.alert('Success', 'Account created! Please sign in.', [
-                { text: 'OK', onPress: () => router.replace('/auth/signin') }
-            ]);
+            await signIn(email.trim(), password);
+            router.replace('/');
         } catch (err: any) {
             Alert.alert('Error', err.message);
         } finally {
@@ -54,7 +43,7 @@ export default function SignUpScreen() {
             >
                 <View style={styles.header}>
                     <Text style={styles.logo}>vibelist</Text>
-                    <Text style={styles.tagline}>create an account</Text>
+                    <Text style={styles.tagline}>welcome back</Text>
                 </View>
 
                 <View style={styles.content}>
@@ -76,31 +65,23 @@ export default function SignUpScreen() {
                             onChangeText={setPassword}
                             secureTextEntry
                         />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="confirm password"
-                            placeholderTextColor={colors.textSecondary}
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            secureTextEntry
-                        />
                         <TouchableOpacity
                             style={[styles.button, (!email.trim() || !password.trim()) && styles.buttonDisabled]}
-                            onPress={handleSignUp}
+                            onPress={handleSignIn}
                             disabled={loading || !email.trim() || !password.trim()}
                             activeOpacity={0.8}
                         >
                             {loading
                                 ? <ActivityIndicator color={colors.background} />
-                                : <Text style={styles.buttonText}>create account</Text>
+                                : <Text style={styles.buttonText}>sign in</Text>
                             }
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity onPress={() => router.navigate('/auth/signin')}>
+                    <TouchableOpacity onPress={() => router.replace('/auth/signup')}>
                         <Text style={styles.switchText}>
-                            already have an account?{' '}
-                            <Text style={styles.switchLink}>sign in</Text>
+                            don't have an account?{' '}
+                            <Text style={styles.switchLink}>sign up</Text>
                         </Text>
                     </TouchableOpacity>
                 </View>

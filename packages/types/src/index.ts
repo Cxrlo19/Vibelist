@@ -19,6 +19,7 @@ export interface Playlist {
     songs: Song[];
     extractedArtists?: string[];
     audioFeatures?: AudioFeatures;
+    dbId?: string;
 }
 
 export interface GenerateRequest {

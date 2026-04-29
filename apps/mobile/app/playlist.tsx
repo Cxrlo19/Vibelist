@@ -11,12 +11,13 @@ import AnimatedSongCard from '../components/AnimatedSongCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function PlaylistScreen() {
-    const { data } = useLocalSearchParams<{ data: string }>();
+    const { data, vibeText } = useLocalSearchParams<{ data: string, vibeText: string }>();
     const router = useRouter();
     const playlist: Playlist = JSON.parse(data);
     const { save, saved } = useSavedPlaylists();
     const isSaved = saved.some(p => p.playlistName === playlist.playlistName);
     const [ready, setReady] = useState(false);
+
 
     useEffect(() => {
         const timer = setTimeout(() => setReady(true), 100);
@@ -51,7 +52,7 @@ export default function PlaylistScreen() {
                     {/* Save button */}
                     <TouchableOpacity
                         style={[styles.saveButton, isSaved && styles.saveButtonSaved]}
-                        onPress={() => save(playlist)}
+                        onPress={() => save(playlist, vibeText)}
                         disabled={isSaved}
                         activeOpacity={0.8}
                     >

@@ -9,19 +9,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { colors, fonts, spacing, radius } from '../../constants/theme';
 
-export default function SignInScreen() {
+export default function SignUpScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signIn } = useAuth();
+    const { signUp } = useAuth();
     const router = useRouter();
 
-    const handleSignIn = async () => {
+    const handleSignUp = async () => {
         if (!email.trim() || !password.trim()) return;
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
+            return;
+        }
+        if (password.length < 6) {
+            Alert.alert('Error', 'Password must be at least 6 characters');
+            return;
+        }
         setLoading(true);
         try {
-            await signIn(email.trim(), password);
-            router.replace('/');
+            await signUp(email.trim(), password);
+            router.replace('/auth/signin');
         } catch (err: any) {
             Alert.alert('Error', err.message);
         } finally {
@@ -43,45 +52,56 @@ export default function SignInScreen() {
             >
                 <View style={styles.header}>
                     <Text style={styles.logo}>vibelist</Text>
-                    <Text style={styles.tagline}>welcome back</Text>
+                    <Text style={styles.tagline}>create an account</Text>
                 </View>
 
-                <View style={styles.form}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="email"
-                        placeholderTextColor={colors.textSecondary}
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="password"
-                        placeholderTextColor={colors.textSecondary}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
-                    <TouchableOpacity
-                        style={[styles.button, (!email.trim() || !password.trim()) && styles.buttonDisabled]}
-                        onPress={handleSignIn}
-                        disabled={loading || !email.trim() || !password.trim()}
-                        activeOpacity={0.8}
-                    >
-                        {loading
-                            ? <ActivityIndicator color={colors.background} />
-                            : <Text style={styles.buttonText}>sign in</Text>
-                        }
+                <View style={styles.content}>
+                    <View style={styles.form}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="email"
+                            placeholderTextColor={colors.textSecondary}
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="password"
+                            placeholderTextColor={colors.textSecondary}
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="confirm password"
+                            placeholderTextColor={colors.textSecondary}
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry
+                        />
+                        <TouchableOpacity
+                            style={[styles.button, (!email.trim() || !password.trim()) && styles.buttonDisabled]}
+                            onPress={handleSignUp}
+                            disabled={loading || !email.trim() || !password.trim()}
+                            activeOpacity={0.8}
+                        >
+                            {loading
+                                ? <ActivityIndicator color={colors.background} />
+                                : <Text style={styles.buttonText}>create account</Text>
+                            }
+                        </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity onPress={() => router.replace('/auth/signin')}>
+                        <Text style={styles.switchText}>
+                            already have an account?{' '}
+                            <Text style={styles.switchLink}>sign in</Text>
+                        </Text>
                     </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity onPress={() => router.push('/auth/signup')}>
-                    <Text style={styles.switchText}>
-                        don't have an account? <Text style={styles.switchLink}>sign up</Text>
-                    </Text>
-                </TouchableOpacity>
             </KeyboardAvoidingView>
         </View>
     );
@@ -105,9 +125,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
         paddingTop: 80,
         paddingBottom: spacing.xl,
+        gap: spacing.xxl,
     },
     header: {
-        gap: spacing.md,
+        gap: spacing.sm,
     },
     logo: {
         fontFamily: fonts.displayItalic,
@@ -119,6 +140,9 @@ const styles = StyleSheet.create({
         fontFamily: fonts.body,
         fontSize: 18,
         color: colors.textSecondary,
+    },
+    content: {
+        gap: spacing.xl,
     },
     form: {
         gap: spacing.md,
