@@ -2,7 +2,7 @@
 
 > Describe a feeling. Get a soundtrack.
 
-VibeList is an iOS app that transforms natural language into personalized playlists. Type a vibe — *"driving at 3am in the rain"* or *"late night to Tinashe, Latto, Bryson Tiller"* — and get a curated playlist with real Spotify links. Apple Music support coming soon.
+VibeList is an iOS app that transforms natural language into personalized playlists. Type a vibe — *"driving at 3am in the rain"* or *"late night to Tinashe, Latto, Bryson Tiller"* — and get a curated playlist with real Spotify links.
 
 ---
 
@@ -10,9 +10,11 @@ VibeList is an iOS app that transforms natural language into personalized playli
 
 - **Natural language vibe input** — describe any mood, moment, or artist preference
 - **Artist extraction** — mention artists and the AI picks up on them automatically
+- **Similar artist expansion** — Last.fm finds sonically similar artists to enrich results
 - **AI-powered generation** — Groq (LLaMA 3.3) generates contextually appropriate playlists
 - **Spotify integration** — every song links directly to Spotify with album art
-- **Save playlists** — save your favorite generated playlists locally
+- **User authentication** — sign up and sign in with email and password
+- **Cloud playlist sync** — saved playlists sync across devices via Supabase
 - **Clean aesthetic UI** — dark, Spotify-inspired design with smooth animations
 
 ---
@@ -22,20 +24,24 @@ VibeList is an iOS app that transforms natural language into personalized playli
 ### Mobile (`apps/mobile`)
 - **Expo** (React Native) — iOS app
 - **Expo Router** — file-based navigation
-- **AsyncStorage** — local playlist persistence
+- **Supabase** — cloud playlist sync
+- **AsyncStorage** — local session persistence
 - **TypeScript**
 
 ### Backend (`apps/backend`)
 - **Node.js + Express** — REST API
 - **Groq API** (LLaMA 3.3-70b) — AI playlist generation + artist extraction
+- **Last.fm API** — similar artist discovery
 - **Spotify Web API** — song metadata, album art, deep links
 - **Supabase** — PostgreSQL database + user authentication
+- **Docker** — containerized for consistent deployments
 - **TypeScript**
 
 ### Infrastructure
 - **Monorepo** — npm workspaces
 - **Render** — backend hosting (free tier)
-- **Shared types** — `@vibelist/types` package used across apps
+- **Docker + Docker Compose** — local containerized development
+- **Shared packages** — `@vibelist/types` and `@vibelist/database` across apps
 
 ---
 
@@ -47,15 +53,18 @@ vibelist/
 │   ├── backend/          # Express API
 │   │   └── src/
 │   │       ├── routes/   # playlist, auth, playlists
-│   │       └── services/ # groq, spotify, supabase
+│   │       └── services/ # groq, spotify, lastfm, supabase
 │   └── mobile/           # Expo iOS app
 │       ├── app/          # Expo Router screens
+│       │   └── auth/     # signin, signup screens
 │       ├── components/   # AnimatedSongCard, SkeletonLoader
+│       ├── context/      # AuthContext
 │       ├── hooks/        # useSavedPlaylists
 │       └── services/     # api.ts
 ├── packages/
 │   ├── types/            # Shared TypeScript interfaces
 │   └── database/         # Supabase client + DB types
+├── docker-compose.yml    # Local containerized development
 └── package.json          # Workspace root
 ```
 
@@ -65,20 +74,25 @@ vibelist/
 
 ### Prerequisites
 - Node.js 18+
+- Docker Desktop
 - Expo Go app on your iOS device
-- Accounts: [Groq](https://console.groq.com), [Supabase](https://supabase.com)
+- Accounts: [Groq](https://console.groq.com), [Spotify Developer](https://developer.spotify.com), [Last.fm API](https://www.last.fm/api), [Supabase](https://supabase.com)
 
-> **Note:** Spotify is used for song metadata and deep links only (album art + direct links). The Spotify `/recommendations` endpoint was deprecated in November 2024 for new developer apps, so song generation is handled entirely by Groq.
+> **Note:** Spotify is used for song metadata and deep links only (album art + direct links). The Spotify `/recommendations` endpoint was deprecated in November 2024 for new developer apps, so song generation is handled by Groq + Last.fm.
 
 ### Installation
 
 ```bash
 # Clone the repo
-git clone https://github.com/Cxrlo19/Vibelist.git
-cd VibeList
+git clone https://github.com/yourusername/vibelist.git
+cd vibelist
 
 # Install all dependencies
 npm install
+
+# Build shared packages
+npm run build --workspace=packages/types
+npm run build --workspace=packages/database
 ```
 
 ### Environment Variables
@@ -91,6 +105,7 @@ SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_KEY=your_supabase_service_key
+LASTFM_API_KEY=your_lastfm_api_key
 ```
 
 **`apps/mobile/.env`**
@@ -103,12 +118,13 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ### Running Locally
 
 ```bash
-# Start backend (from root)
+# Option 1: Standard
 npm run dev:backend
+cd apps/mobile && npx expo start
 
-# Start mobile app (from apps/mobile)
-cd apps/mobile
-npx expo start
+# Option 2: Docker
+docker-compose up --build
+cd apps/mobile && npx expo start
 ```
 
 ---
@@ -145,24 +161,24 @@ user_actions (id, user_id, action, artist, vibe_text, created_at)
 ## 🧠 How It Works
 
 1. User types a vibe (e.g. *"late night drive to Tinashe and Bryson Tiller"*)
-2. Backend sends vibe to **Groq** which extracts:
+2. **Groq** analyzes the vibe and extracts:
    - Artist names mentioned
    - Audio features (energy, valence, tempo)
    - Playlist name, mood description, vibe tags
-   - 10 song suggestions
-3. **Spotify API** enriches each song with album art and direct links
-4. Results returned to the mobile app and displayed with animations
+3. **Last.fm** expands the artist list with sonically similar artists
+4. **Groq** generates 10 songs using the expanded artist context
+5. **Spotify API** enriches each song with album art and direct links
+6. Results are returned to the app, displayed with staggered animations
+7. User can save playlists — synced to Supabase for cross-device access
 
 ---
 
 ## 💡 Possible Implementations
 
-- **Similar Artist Discovery** — integrate Last.fm's `artist.getSimilar` to expand artist seeds and generate richer, more accurate playlists
 - **ML Personalization** — track saves and taps to build a taste profile over time, feeding it back into the generation prompt for increasingly personal results
-- **Cross-Device Sync** — replace AsyncStorage with Supabase-backed cloud storage tied to user accounts
 - **Apple Music Support** — alternative to Spotify for link enrichment and album art using MusicKit (exploratory)
-- **Docker** — containerize the backend for consistent local and production deployments
-- **App Store Release** — publish via Expo EAS Build and EAS Submit
+- **App Store Release** — publish via Expo EAS Build and EAS Submit (requires Apple Developer account)
+- **Web Version** — Next.js frontend hitting the same backend for browser access
 
 ---
 
