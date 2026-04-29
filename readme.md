@@ -173,7 +173,9 @@ user_actions (id, user_id, action, artist, vibe_text, created_at)
 
 ---
 
+## 💡 Possible Implementations
 
+- **ML Personalization** — track saves and taps to build a taste profile over time, feeding it back into the generation prompt for increasingly personal results
 
 ## 📄 License
 
