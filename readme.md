@@ -173,14 +173,7 @@ user_actions (id, user_id, action, artist, vibe_text, created_at)
 
 ---
 
-## 💡 Possible Implementations
 
-- **ML Personalization** — track saves and taps to build a taste profile over time, feeding it back into the generation prompt for increasingly personal results
-- **Apple Music Support** — alternative to Spotify for link enrichment and album art using MusicKit (exploratory)
-- **App Store Release** — publish via Expo EAS Build and EAS Submit (requires Apple Developer account)
-- **Web Version** — Next.js frontend hitting the same backend for browser access
-
----
 
 ## 📄 License
 
